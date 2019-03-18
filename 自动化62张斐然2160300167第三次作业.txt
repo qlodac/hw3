@@ -1,0 +1,130 @@
+1
+im=imread('woman.bmp');
+figure(1)
+imhist(im);
+axis([0 250 0 150000]);
+title('woman直方图');
+
+
+
+2
+pic = histeq(im, 256);
+figure
+subplot(1,2,1);
+imshow(im);
+title('woman原始图像');
+subplot(1,2,2);
+imshow(pic);
+title('woman直方图均衡结果');
+
+3
+pic2=imread('woman1.bmp');
+hist= imhist(im);
+[match2, T] = histmatching(pic2, hist);
+figure;
+subplot(1, 2, 1), imshow(pic2), title('woman1.bmp原图');
+subplot(1, 2, 2), imshow(match2), title('直方图匹配增强后的图像');
+
+
+
+function [image_out, T3] = histmatching(image_in, hist)
+Level = 256;
+[m, n] = size(image_in);
+image_hist = imhist(image_in);
+image_out = image_in;
+% 求解T1
+ac1 = zeros(Level, 1);
+T1 = zeros(Level, 1, 'uint8');
+ac1(1) = image_hist(1);
+for i = 2 : Level
+    ac1(i) = ac1(i - 1) + image_hist(i);
+end
+ac1 = ac1 * (Level - 1);
+for i = 1 : 256
+    T1(i) = uint8(round((ac1(i)) / (m * n)));
+end
+ac2 = zeros(Level, 1);
+T2 = zeros(Level, 1, 'uint8');
+ac2(1) = hist(1);
+for i = 2 : Level
+    ac2(i) = ac2(i - 1) + hist(i);
+end
+ac2 = ac2 * (Level - 1);
+hist_sum = sum(hist);
+for i = 1 : 256
+    T2(i) = uint8(round((ac2(i)) / hist_sum));
+end
+temp = zeros(Level, 1, 'uint8');
+T3 = T1;
+for i = 1 : 256
+    for j = 1 : 256
+        temp(j) = abs(T1(i) - T2(j));
+    end
+    [~, B] = min(temp);
+    T3(i) = B - 1;
+end
+for i = 1 : m
+    for j = 1 : n
+        image_out(i, j) = T3(uint32(image_in(i, j)) + 1);
+    end
+end
+end
+
+
+
+
+
+
+4
+clear;
+close all;
+img=imread('elain.bmp');
+figure
+subplot(1, 2, 1)
+imshow(img);
+title('局部增强原始图像');
+n=7;
+model(1:n,1:n)=1;
+imgTend=wextend('2D','sym',img,n);
+tendTrans=double(imgTend)
+[row,col]=size(imgTend);
+tendTransTmp=tendTrans;
+for i=n+1:row-n
+ for j=n+1:col-n 
+modelResult=tendTrans(i:i+(n-1),j:j+(n-1)).*model(1:n,1:n);
+modelEpual=histeq(uint8(modelResult));
+ equalTmp=double(modelEpual);
+ tendTransTmp(i,j)=equalTmp(4,4);
+ end
+end
+result=tendTransTmp(n+1:row-n,n+1:col-n);
+result=uint8(result);
+subplot(1, 2, 2)
+imshow(result);
+title('增强图像');
+
+
+
+
+
+
+
+5
+f = imread('woman.bmp');
+fd = double(f);
+h = fspecial('sobel');
+g = sqrt(imfilter(fd,h,'replicate').^2+imfilter(fd,h','replicate').^2); 
+L = watershed(g);                               
+wr = L ==0;                                     
+rm = imregionalmin(g);
+im = imextendedmin(f,2);                         
+fim = f;                                        
+fim(im) = 175;
+Lim = watershed(bwdist(im));                    
+em = Lim ==0;
+g2 = imimposemin(g , im | em);                 
+L2 = watershed(g2);
+f2 = f;
+f2(L2 ==0) = 255;
+subplot(1,2,1);imshow(f);title('原图像');
+subplot(1,2,2);imshow(f2);title('分割结果');
